@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radiator Schedule – Octopus Energy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#150A2E; --panel:#1E1442; --input-bg:#190C38; --ink:#F5F3FA; --ink-soft:#B7AED6;
+    --line:#3A2D66; --heat:#FF7A45; --heat-soft:#4A2438; --estimate:#C084F5; --octo-pink:#E8006A;
+    --cold:#7EC8E3; --good:#4CC38A; color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.45}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 16px 120px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .pill{display:inline-flex;align-items:center;gap:8px;background:var(--octo-pink);color:#fff;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:15px;padding:7px 16px;border-radius:999px}
+  .tagline{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft)}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;color:var(--cold);text-transform:uppercase;margin:22px 0 6px}
+  h1{font-family:"Space Grotesk",sans-serif;font-size:clamp(24px,4vw,34px);margin:0 0 8px;font-weight:700}
+  .lede{color:var(--ink-soft);max-width:780px;margin:0 0 18px}
+  .rule{height:2px;background:var(--octo-pink);border:0;margin:0 0 22px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:20px}
+  .step{display:flex;align-items:center;gap:10px;margin:0 0 14px}
+  .step .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--octo-pink);color:#fff;font:700 12px "Space Grotesk",sans-serif;flex:none}
+  .step h2{font-family:"Space Grotesk",sans-serif;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);margin:0;font-weight:600}
+  .step .aside{margin-left:auto;color:var(--ink-soft);font-size:12px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:end}
+  label.f{display:block;font-weight:600;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px}
+  input,select{width:100%;background:var(--input-bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 10px;font:inherit}
+  input[type=number],input.mono{font-family:"IBM Plex Mono",monospace}
+  input:focus,select:focus,button:focus-visible{outline:2px solid var(--estimate);outline-offset:1px}
+  input[type=checkbox]{width:auto;accent-color:var(--octo-pink)}
+  #j-flow{color:var(--heat);font-weight:600}
+  input.locked{background:transparent;border-style:dashed;cursor:not-allowed;font-family:"IBM Plex Mono",monospace}
+  input.rname.locked{font:600 15px "Space Grotesk",sans-serif}
+  input.locked:focus{outline:none}
+  .hint{color:var(--ink-soft);font-size:12px;margin-top:5px}
+  .mode{display:inline-block;padding:4px 10px;border-radius:6px;font:700 12px "Space Grotesk",sans-serif;border:1px solid var(--line)}
+  .mode.low{color:var(--cold);background:#22405A}
+  .mode.high{color:var(--heat);background:var(--heat-soft)}
+  .check{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ink-soft);margin-top:6px;cursor:pointer}
+
+  .drop{border:2px dashed var(--line);border-radius:10px;padding:26px 16px;text-align:center;cursor:pointer;background:var(--input-bg);color:var(--ink-soft)}
+  .drop.over,.drop:hover{border-color:var(--octo-pink)}
+  .drop b{color:var(--octo-pink)}
+  .msg{color:var(--heat);margin-top:8px;font-size:13px;min-height:1em}
+
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:9px 14px;font:600 13px Inter,sans-serif;cursor:pointer}
+  .btn.primary{background:var(--octo-pink);border-color:var(--octo-pink);color:#fff}
+  .btn.ghost{background:transparent}
+  .btn:hover{filter:brightness(1.12)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .icon{background:none;border:0;color:var(--ink-soft);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px}
+  .icon:hover{color:var(--octo-pink);background:var(--input-bg)}
+  .link{background:none;border:1px dashed var(--line);color:var(--ink-soft);border-radius:6px;padding:7px 12px;font:600 12.5px Inter,sans-serif;cursor:pointer}
+  .link:hover{color:var(--ink);border-color:var(--estimate)}
+
+  /* Room cards */
+  .room{border:1px solid var(--line);border-radius:10px;background:var(--paper);margin-bottom:14px;overflow:hidden}
+  .room.short{border-color:var(--octo-pink)}
+  .rhead{display:grid;grid-template-columns:minmax(140px,1.4fr) 92px 92px 84px repeat(4,minmax(84px,1fr)) 34px;gap:10px;align-items:end;padding:12px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+  @media (max-width:900px){.rhead{grid-template-columns:1fr 1fr 1fr;}.rhead .rname-wrap{grid-column:1/-1}.rhead .del-room{grid-row:1;grid-column:3;justify-self:end}}
+  .rname{font:600 15px "Space Grotesk",sans-serif}
+  .mini{font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-bottom:4px}
+  .metric{display:flex;flex-direction:column;gap:1px;padding:4px 8px;border-radius:6px;background:var(--input-bg);min-height:52px;justify-content:center}
+  .metric .ml{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+  .metric .mv{font:700 16px "Space Grotesk",sans-serif}
+  .metric .ms{font:11px "IBM Plex Mono",monospace;color:var(--ink-soft)}
+  .metric.ok{background:var(--good);color:var(--paper)}.metric.ok .ml{color:var(--paper)}
+  .metric.short{background:var(--octo-pink)}.metric.short .ml{color:#fff}
+
+  .rads{padding:10px 14px 4px}
+  .rad{display:grid;grid-template-columns:28px 1fr auto 34px;gap:10px;align-items:start;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .rad:last-child{border-bottom:0}
+  .pos{font:600 12px "IBM Plex Mono",monospace;color:var(--ink-soft);padding-top:9px}
+  .seg{display:flex;flex-wrap:wrap;gap:6px}
+  .opt{border:1px solid var(--line);background:var(--input-bg);color:var(--ink-soft);border-radius:8px;padding:6px 10px;text-align:left;cursor:pointer;font:inherit;font-size:12.5px;line-height:1.3;max-width:320px}
+  .opt b{display:block;font:700 11px "Space Grotesk",sans-serif;letter-spacing:.05em;text-transform:uppercase}
+  .opt small{font-family:"IBM Plex Mono",monospace;font-size:11px}
+  .opt:hover{color:var(--ink);border-color:var(--estimate)}
+  .opt[aria-pressed=true]{color:var(--ink)}
+  .opt.existing[aria-pressed=true]{border-color:var(--estimate);background:#2c1a52}
+  .opt.existing b{color:var(--estimate)}
+  .opt.proposed[aria-pressed=true]{border-color:var(--good);background:#16352d}
+  .opt.proposed b{color:var(--good)}
+  .opt.custom[aria-pressed=true]{border-color:var(--heat);background:var(--heat-soft)}
+  .opt.custom b{color:var(--heat)}
+  .opt.none[aria-pressed=true]{border-color:var(--ink-soft);background:var(--panel)}
+  .customf{display:grid;grid-template-columns:2fr 1.2fr 1fr;gap:8px;margin-top:8px}
+  @media (max-width:700px){.customf{grid-template-columns:1fr}}
+  .customf input{padding:7px 9px;font-size:13px}
+  .chint{grid-column:1/-1;font-size:12px;color:var(--ink-soft)}
+  .chint b{color:var(--heat)}
+  .lout{font:700 14px "Space Grotesk",sans-serif;padding-top:8px;text-align:right;white-space:nowrap}
+  .lout small{display:block;font:11px "IBM Plex Mono",monospace;color:var(--ink-soft)}
+  @media (max-width:600px){
+    .rad{grid-template-columns:24px 1fr 30px}
+    .rad>.lout{grid-column:2;grid-row:2;text-align:left;padding-top:0}
+    .rad>.lout small{display:inline;margin-left:6px}
+    .rad>:last-child{grid-column:3;grid-row:1}
+    .opt{max-width:none;flex:1 1 140px}
+    .sumbar .in{gap:4px 12px;font-size:12px}
+  }
+  .radfoot{padding:6px 14px 12px;display:flex;gap:8px;flex-wrap:wrap}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);margin-top:4px}
+  .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+  .notes{color:var(--ink-soft);font-size:12.5px}
+  .notes p{margin:6px 0}
+  .notes code{font-family:"IBM Plex Mono",monospace;color:var(--ink);background:var(--input-bg);padding:1px 5px;border-radius:4px}
+
+  .sumbar{position:sticky;bottom:0;z-index:5;background:rgba(21,10,46,.94);backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:10px 16px}
+  .sumbar .in{max-width:1180px;margin:0 auto;display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ink-soft)}
+  .sumbar b{color:var(--ink);font-family:"Space Grotesk",sans-serif}
+  .sumbar .warn b{color:var(--octo-pink)}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="top">
+      <div class="brand"><span class="pill">🐙 Octopus Energy</span><span class="tagline">Heating Assessment Tools</span></div>
+      <button class="btn ghost hide" id="newBtn" type="button">Start a new schedule</button>
+    </div>
+    <div class="eyebrow">Radiator schedule / sizing &amp; room temperatures</div>
+    <h1>Radiator Schedule</h1>
+    <p class="lede">Build one radiator schedule for the customer. Upload the Octopus schedule PDF, then for every radiator position you can keep the existing radiator, use the proposed one, or add a customer-supplied radiator. Coverage and estimated room temperatures update as you go.</p>
+    <hr class="rule">
+  </header>
+
+  <!-- STEP 1 -->
+  <section class="card">
+    <div class="step"><span class="n">1</span><h2>Start</h2><span class="aside" id="srcNote"></span></div>
+    <div class="drop" id="drop" role="button" tabindex="0"><b>Click to upload</b> or drop the radiator schedule PDF here
+      <div class="hint">Reads the customer details, design temperatures, rooms and existing/proposed radiators</div>
+      <input type="file" id="file" accept="application/pdf" class="hide"></div>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <div id="main" class="hide">
+    <!-- STEP 2 -->
+    <section class="card">
+      <div class="step"><span class="n">2</span><h2>Customer &amp; design conditions</h2></div>
+      <div class="grid">
+        <div><label class="f" for="j-cname">Customer name</label><input id="j-cname" data-j="cname"></div>
+        <div><label class="f" for="j-addr">Address</label><input id="j-addr" data-j="addr"></div>
+        <div><label class="f" for="j-pc">Postcode</label><input id="j-pc" data-j="pc" class="mono"></div>
+        <div><label class="f" for="j-pref">Project reference</label><input id="j-pref" data-j="pref" class="mono"></div>
+        <div><label class="f" for="j-qref">Quote reference</label><input id="j-qref" data-j="qref" class="mono"></div>
+      </div>
+      <div class="grid" style="margin-top:14px">
+        <div>
+          <label class="f" for="j-flow">Design flow temperature (°C) <span class="mode low" id="mode">LOW TEMP</span></label>
+          <input id="j-flow" class="locked" type="number" readonly tabindex="-1" aria-readonly="true">
+          <div class="hint">🔒 From the radiator schedule</div>
+        </div>
+        <div>
+          <label class="f" for="j-outd">Outdoor design temperature (°C)</label>
+          <input id="j-outd" class="locked" type="number" readonly tabindex="-1" aria-readonly="true">
+          <div class="hint">🔒 From the radiator schedule</div>
+        </div>
+        <div>
+          <label class="f" for="j-dk">Flow/return difference (K)</label>
+          <input id="j-dk" class="locked" type="number" readonly tabindex="-1" aria-readonly="true">
+          <div class="hint">🔒 5K up to 50°C, 10K at 51°C and above</div>
+        </div>
+        <div>
+          <label class="f" for="j-mwt">Mean water temperature (°C)</label>
+          <input id="j-mwt" class="locked" type="text" readonly tabindex="-1" aria-readonly="true">
+          <div class="hint" id="mwtNote">🔒 Flow temperature − half the flow/return difference</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="card">
+      <div class="step"><span class="n">3</span><h2>Rooms &amp; radiators</h2>
+        <div class="aside actions">
+          <button class="btn" id="allExisting" type="button">Keep all existing</button>
+          <button class="btn" id="allProposed" type="button">Use all proposed</button>
+        </div>
+      </div>
+      <div id="rooms"></div>
+      <div class="legend" style="margin-top:14px">
+        <span style="--c:var(--estimate)">Keep existing</span>
+        <span style="--c:var(--good)">Proposed (Octopus)</span>
+        <span style="--c:var(--heat)">Customer supplied</span>
+        <span style="--c:var(--octo-pink)">Coverage 96% or below</span>
+      </div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="card">
+      <div class="step"><span class="n">4</span><h2>Customer PDF &amp; export</h2></div>
+      <p class="hint" style="margin:0 0 12px">The radiator schedule PDF follows the Octopus schedule layout, with every room and the radiators chosen above.</p>
+      <div class="actions">
+        <button class="btn primary" id="pdfBtn" type="button">⬇ Download radiator schedule PDF</button>
+        <button class="btn" id="shareBtn" type="button">Share schedule PDF</button>
+        <button class="btn" id="csvBtn" type="button">⬇ Download CSV</button>
+      </div>
+      <div class="grid" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+        <div>
+          <label class="f" for="pdfScope">Room temperature PDF: rooms to include</label>
+          <select id="pdfScope">
+            <option value="all">All rooms</option>
+            <option value="changed">Only rooms with a kept or customer-supplied radiator</option>
+          </select>
+        </div>
+        <div><button class="btn" id="tempPdfBtn" type="button">⬇ Download room temperature PDF</button></div>
+      </div>
+      <div class="msg" id="msg2"></div>
+    </section>
+
+    <section class="card notes">
+      <div class="step"><h2>How it's calculated</h2></div>
+      <p>Mean water temperature (MWT) = flow temperature − half the flow/return difference. The flow/return difference is 5K up to 50°C and 10K at 51°C and above, so that's flow − <code>2.5</code> or flow − <code>5</code>. The flow and outdoor design temperatures come from the uploaded schedule and can't be edited.</p>
+      <p><b>Needs @ΔT50</b> is the radiator rating a room needs to cover its heat loss: <code>heat loss ÷ ((MWT − room temp) ÷ 50)<sup>1.3</sup></code>, rounded down (BTU = W × 3.41).</p>
+      <p>Customer-supplied radiators are entered at their ΔT50 rating and converted to output at design conditions with the same curve. Existing and proposed outputs are used as stated on the schedule.</p>
+      <p>Coverage = total radiator output in the room ÷ room heat loss. Where coverage is 97% or more, the estimated room temperature is the design temperature. Below 97%, it is where radiator output and room heat loss balance at the outdoor design temperature (exponent 1.3).</p>
+    </section>
+  </div>
+</div>
+
+<div class="sumbar hide" id="sumbar"><div class="in">
+  <span><b id="sRooms">0</b> rooms</span>
+  <span><b id="sHL">0</b> W heat loss</span>
+  <span><b id="sOut">0</b> W radiator output</span>
+  <span><b id="sKept">0</b> kept · <b id="sCust">0</b> customer supplied · <b id="sNew">0</b> new</span>
+  <span class="warn"><b id="sLow">0</b> rooms at 96% or below</span>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const N=1.3, KEY='radschedule-v1';
+let uidN=0; const uid=p=>p+(++uidN)+Math.random().toString(36).slice(2,6);
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* ---------- State ---------- */
+const blankJob=()=>({cname:'',addr:'',pc:'',pref:'',qref:'',flow:50,outd:-3,dk:5,dkAuto:true,source:''});
+let S={job:blankJob(),rooms:[]};
+const newLine=()=>({id:uid('l'),cDesc:null,cOut:0,pDesc:null,pOut:0,choice:'custom',model:'',dims:'',out50:''});
+const newRoom=(o)=>Object.assign({id:uid('r'),name:'',hl:'',dt:21,lines:[newLine()]},o||{});
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function restore(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.job&&Array.isArray(s.rooms)&&s.rooms.length){
+    if(s.job.schedFlow!==undefined&&s.job.schedFlow!=='')s.job.flow=s.job.schedFlow;
+    s.rooms.forEach(r=>{if(r.wpm2==null){const a=parseFloat(r.area),h=parseFloat(r.hl);r.wpm2=(a>0&&h>0)?+(h/a).toFixed(1):''}delete r.area});
+    S=s;return true}}catch(e){}return false}
+
+/* ---------- Maths ---------- */
+const numv=v=>{const n=parseFloat(v);return isNaN(n)?NaN:n};
+function dk(){const f=numv(S.job.flow);return isNaN(f)?NaN:(f>50?10:5)}
+function mwt(){return numv(S.job.flow)-dk()/2}
+function factor(dt){const d=mwt()-numv(dt);return d>0?Math.pow(d/50,N):NaN}
+function lineOut(l,room){
+  switch(l.choice){
+    case 'existing':return l.cOut||0;
+    case 'proposed':return l.pOut||0;
+    case 'custom':{const f=factor(room.dt),o=numv(l.out50);return (o>0&&f>0)?Math.round(o*f):0}
+    default:return 0;
+  }
+}
+function estTemp(out,hl,Td){
+  if(!(hl>0))return NaN;
+  if(Math.round(out/hl*100)>=97)return Td; // 97% coverage or more counts as reaching design temp
+  const To=numv(S.job.outd),m=mwt();
+  if(isNaN(To)||isNaN(m)||m<=Td||Td<=To)return NaN;
+  const f=T=>out*Math.pow((m-T)/(m-Td),N)-hl*(T-To)/(Td-To);
+  let lo=To,hi=Td;for(let i=0;i<60;i++){const mid=(lo+hi)/2;f(mid)>0?lo=mid:hi=mid}
+  return (lo+hi)/2;
+}
+function roomCalc(r){
+  const hl=numv(r.hl),dt=numv(r.dt),f=factor(dt);
+  const outs=r.lines.map(l=>lineOut(l,r));
+  const out=outs.reduce((a,b)=>a+b,0);
+  const cov=hl>0?out/hl:NaN;
+  const req=(hl>0&&f>0)?Math.floor(hl/f):NaN;
+  return {hl,dt,f,outs,out,cov,req,est:estTemp(out,hl,dt)};
+}
+const covClass=c=>isNaN(c)?'':(Math.round(c*100)>=97?'ok':'short');
+
+/* ---------- Rendering ---------- */
+function optHTML(l,kind,label,detail){
+  return `<button type="button" class="opt ${kind}" data-choice="${kind}" aria-pressed="${l.choice===kind}"><b>${label}</b>${detail?esc(detail):''}</button>`;
+}
+function lineHTML(r,l,i){
+  let h=`<div class="rad" data-l="${l.id}"><span class="pos">#${i+1}</span><div><div class="seg">`;
+  if(l.cDesc)h+=optHTML(l,'existing','Keep existing',l.cDesc+' · '+l.cOut+' W');
+  if(l.pDesc)h+=optHTML(l,'proposed','Proposed',l.pDesc+' · '+l.pOut+' W');
+  h+=optHTML(l,'custom','Customer supplied','');
+  if(l.cDesc)h+=optHTML(l,'none','No radiator','Remove, nothing fitted');
+  h+='</div>';
+  if(l.choice==='custom'){
+    h+=`<div class="customf">
+      <input data-c="model" value="${esc(l.model)}" placeholder="Model + make" aria-label="Model and make">
+      <input data-c="dims" value="${esc(l.dims)}" placeholder="Dimensions mm (H × L)" aria-label="Dimensions in mm">
+      <input data-c="out50" type="number" min="0" value="${esc(l.out50)}" placeholder="Output @ΔT50 (W)" aria-label="Output at Delta T 50 in watts">
+      <div class="chint" id="ch-${l.id}"></div></div>`;
+  }
+  const manual=!l.cDesc&&!l.pDesc;
+  h+=`</div><div class="lout" id="lo-${l.id}"></div>${manual?'<button type="button" class="icon del-line" title="Remove this radiator">✕</button>':'<span></span>'}</div>`;
+  return h;
+}
+function roomHTML(r){
+  return `<article class="room" data-r="${r.id}" id="room-${r.id}">
+    <div class="rhead">
+      <div class="rname-wrap"><span class="mini">Room</span><input class="rname locked" value="${esc(r.name)}" readonly tabindex="-1" aria-readonly="true"></div>
+      <div><span class="mini">Heat loss (W)</span><input class="locked" value="${esc(r.hl)}" readonly tabindex="-1" aria-readonly="true"></div>
+      <div><span class="mini">Design temp (°C)</span><input class="locked" value="${esc(r.dt)}" readonly tabindex="-1" aria-readonly="true"></div>
+      <div><span class="mini">W/m²</span><input class="locked" value="${esc(r.wpm2)}" readonly tabindex="-1" aria-readonly="true" title="Room heat loss in watts per m², from the schedule"></div>
+      <div class="metric" title="Radiator rating needed at ΔT50 to cover the heat loss"><span class="ml">Needs @ΔT50</span><span class="mv" id="rq-${r.id}">–</span><span class="ms" id="bt-${r.id}"></span></div>
+      <div class="metric"><span class="ml">Room output</span><span class="mv" id="ro-${r.id}">–</span><span class="ms">at design</span></div>
+      <div class="metric" id="cb-${r.id}"><span class="ml">Coverage</span><span class="mv" id="cv-${r.id}">–</span></div>
+      <div class="metric"><span class="ml">Est. temp</span><span class="mv" id="es-${r.id}">–</span></div>
+      <button type="button" class="icon del-room" title="Remove room">✕</button>
+    </div>
+    <div class="rads">${r.lines.map((l,i)=>lineHTML(r,l,i)).join('')||'<p class="hint" style="margin:6px 0">No radiators in this room.</p>'}</div>
+    <div class="radfoot"><button type="button" class="link add-line">+ Add customer-supplied radiator</button></div>
+  </article>`;
+}
+function render(){
+  $('#rooms').innerHTML=S.rooms.map(roomHTML).join('');
+  update();
+}
+function fillJob(){
+  ['cname','addr','pc','pref','qref','flow','outd','dk'].forEach(k=>{$('#j-'+k).value=S.job[k]??''});
+}
+function update(){
+  const f=numv(S.job.flow),high=f>50;
+  const mode=$('#mode');mode.textContent=isNaN(f)?'–':high?'HIGH TEMP':'LOW TEMP';mode.className='mode '+(high?'high':'low');
+  const k=dk();$('#j-dk').value=isNaN(k)?'':k;
+  const m=mwt();$('#j-mwt').value=isNaN(m)?'–':m;$('#mwtNote').textContent='🔒 '+(isNaN(m)?'Flow temperature − half the flow/return difference':`Flow ${f} − ${k/2}`);
+  let tHL=0,tOut=0,low=0,kept=0,cust=0,nw=0;
+  S.rooms.forEach(r=>{
+    const c=roomCalc(r);
+    $('#rq-'+r.id).textContent=isNaN(c.req)?'–':c.req+' W';
+    $('#bt-'+r.id).textContent=isNaN(c.req)?'':Math.round(c.req*3.41)+' BTU';
+    $('#ro-'+r.id).textContent=c.out+' W';
+    $('#cv-'+r.id).textContent=isNaN(c.cov)?'–':Math.round(c.cov*100)+'%';
+    $('#cb-'+r.id).className='metric '+covClass(c.cov);
+    $('#es-'+r.id).textContent=isNaN(c.est)?'n/a':c.est.toFixed(1)+'°C';
+    $('#room-'+r.id).classList.toggle('short',covClass(c.cov)==='short');
+    r.lines.forEach((l,i)=>{
+      const o=c.outs[i],el=$('#lo-'+l.id);
+      el.innerHTML=l.choice==='none'?'0 W<small>removed</small>':o+' W<small>at design</small>';
+      if(l.choice==='custom'){
+        const other=c.out-o,need=(c.hl>0&&c.f>0)?Math.max(0,Math.ceil((c.hl-other)/c.f)):NaN;
+        const ch=$('#ch-'+l.id);
+        if(ch)ch.innerHTML=isNaN(need)?'Enter the room heat loss and design temperature to see what this radiator needs.':
+          (need===0?'The room is already covered without this radiator.':`To bring the room to 100%, this radiator needs about <b>${need} W @ΔT50</b> (${Math.round(need*3.41)} BTU).`);
+      }
+      if(l.choice==='existing'&&l.pDesc)kept++;
+      if(l.choice==='custom')cust++;
+      if(l.choice==='proposed')nw++;
+    });
+    if(!isNaN(c.hl))tHL+=c.hl;tOut+=c.out;if(covClass(c.cov)==='short')low++;
+  });
+  $('#sRooms').textContent=S.rooms.length;$('#sHL').textContent=tHL;$('#sOut').textContent=tOut;
+  $('#sKept').textContent=kept;$('#sCust').textContent=cust;$('#sNew').textContent=nw;$('#sLow').textContent=low;
+  save();
+}
+function showMain(){
+  $('#main').classList.remove('hide');$('#sumbar').classList.remove('hide');$('#newBtn').classList.remove('hide');
+  $('#srcNote').textContent=S.job.source?('Loaded from '+S.job.source):'';
+  fillJob();render();
+}
+
+/* ---------- Schedule PDF import ---------- */
+async function readPdf(buf){
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;const out=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const tc=await (await pdf.getPage(p)).getTextContent();
+    const items=tc.items.filter(i=>i.str.trim()).map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5]}));
+    items.sort((a,b)=>b.y-a.y||a.x-b.x);
+    let cur=[],cy=null;
+    for(const it of items){if(cy===null||Math.abs(it.y-cy)>3){if(cur.length)out.push(cur);cur=[];cy=it.y}cur.push(it)}
+    if(cur.length)out.push(cur);
+  }
+  return out.map(l=>l.sort((a,b)=>a.x-b.x).map(i=>i.s).join(' '));
+}
+function parse(lines){
+  const strip=l=>l.replace(/Total Radiator Output\s*\d*/,'').replace(/Design Flow Temperature\s*-?[\d.]*/,'').replace(/Design Outside Temperature\s*-?[\d.]*/,'').trim();
+  const txt=lines.join('\n');const m={};
+  m.flow=(txt.match(/Design Flow Temperature\s+(-?\d+(?:\.\d+)?)/)||[])[1];
+  m.outd=(txt.match(/Design Outside Temperature\s+(-?\d+(?:\.\d+)?)/)||[])[1];
+  if(m.flow==null||m.outd==null){for(const l of lines){const q=l.match(/^(\d{3,5})\s+(\d{2,3})\s+(-?\d+(?:\.\d+)?)$/);if(q){m.flow=q[2];m.outd=q[3];break}}}
+  const cl=lines.map(strip);
+  m.client=((cl.find(l=>/^Client\s/.test(l))||'').replace(/^Client\s+/,'')).trim();
+  const ai=cl.findIndex(l=>/^Address/.test(l)),pi=cl.findIndex(l=>/^Project Reference/.test(l));
+  if(ai>=0){
+    const parts=cl.slice(ai,pi>ai?pi:ai+4).map((l,i)=>i?l:l.replace(/^Address\s*/,'')).filter(Boolean);
+    const full=parts.join(', ');const pc=full.match(/[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}/);
+    m.pc=pc?pc[0]:'';m.addr=full.replace(m.pc,'').replace(/[,\s]+$/,'').replace(/,\s*,/g,',');
+  }
+  m.qref=((txt.match(/Quote Reference\s+(\S+)/)||[])[1])||'';
+  m.pref=((txt.match(/Project Reference\s+(\S+)/)||[])[1])||'';
+  const re=/^(.+?)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+\.\d+)\s+(.*)$/;const rs=[];
+  for(const l of lines){
+    const x=l.match(re);if(!x||!/H\d+\s*x\s*L\d+/.test(x[6]))continue;
+    const t=x[6].split(/\s+/),n=t.length,head=t.slice(0,n-4),pOutRaw=t[n-4];
+    const i=head.findIndex(w=>/^L\d+$/.test(w));if(i<0)continue;
+    const pDesc=head.slice(i+2).join(' ');
+    rs.push({room:x[1],dt:+x[3],hl:+x[4],wpm2:+x[5],cDesc:head.slice(0,i+1).join(' '),cOut:+head[i+1],
+      pDesc:(pDesc&&pDesc!=='-')?pDesc:null,pOut:isNaN(+pOutRaw)?0:+pOutRaw});
+  }
+  return {m,rs};
+}
+async function loadPdf(file){
+  const msg=$('#msg');
+  if(S.rooms.length&&!confirm('Replace the current schedule with this PDF?'))return;
+  msg.textContent='Reading schedule…';
+  try{
+    if(!window.pdfjsLib)throw new Error('PDF reader failed to load. Check your connection and reload.');
+    const {m,rs}=parse(await readPdf(await file.arrayBuffer()));
+    if(!rs.length)throw new Error('No radiator rows found. Please upload the Octopus radiator schedule PDF.');
+    const rooms=[],map={};
+    rs.forEach(x=>{
+      if(!map[x.room]){map[x.room]=newRoom({name:x.room,hl:x.hl,dt:x.dt,wpm2:isNaN(x.wpm2)?'':x.wpm2,lines:[]});rooms.push(map[x.room])}
+      map[x.room].lines.push({id:uid('l'),cDesc:x.cDesc,cOut:x.cOut,pDesc:x.pDesc,pOut:x.pOut,choice:x.pDesc?'proposed':'existing',model:'',dims:'',out50:''});
+    });
+    const flow=numv(m.flow),outd=numv(m.outd);
+    S={job:Object.assign(blankJob(),{cname:m.client||'',addr:m.addr||'',pc:m.pc||'',pref:m.pref||'',qref:m.qref||'',
+      flow:isNaN(flow)?'':flow,schedFlow:isNaN(flow)?'':flow,outd:isNaN(outd)?'':outd,source:file.name}),rooms};
+    const miss=[isNaN(flow)?'design flow temperature':'',isNaN(outd)?'outdoor design temperature':''].filter(Boolean);
+    msg.textContent=miss.length?('Couldn’t find the '+miss.join(' or ')+' in this schedule. Check the PDF and upload it again.'):'';showMain();
+  }catch(e){msg.textContent=e.message||String(e)}
+}
+
+/* ---------- Events ---------- */
+const findRoom=el=>{const a=el.closest('[data-r]');return a&&S.rooms.find(r=>r.id===a.dataset.r)};
+const findLine=(r,el)=>{const a=el.closest('[data-l]');return a&&r&&r.lines.find(l=>l.id===a.dataset.l)};
+$('#rooms').addEventListener('input',e=>{
+  const t=e.target,r=findRoom(t);if(!r)return;
+  if(t.dataset.f){r[t.dataset.f]=t.value;update()}
+  else if(t.dataset.c){const l=findLine(r,t);if(l){l[t.dataset.c]=t.value;update()}}
+});
+$('#rooms').addEventListener('click',e=>{
+  const t=e.target,r=findRoom(t);if(!r)return;
+  const opt=t.closest('.opt');
+  if(opt){const l=findLine(r,opt);if(l&&l.choice!==opt.dataset.choice){l.choice=opt.dataset.choice;render();
+      if(l.choice==='custom'){const i=document.querySelector(`[data-l="${l.id}"] [data-c="model"]`);i&&i.focus()}}return}
+  if(t.closest('.add-line')){const l=newLine();r.lines.push(l);render();const i=document.querySelector(`[data-l="${l.id}"] [data-c="model"]`);i&&i.focus();return}
+  if(t.closest('.del-line')){const l=findLine(r,t);r.lines=r.lines.filter(x=>x!==l);render();return}
+  if(t.closest('.del-room')){
+    if((r.name||r.hl)&&!confirm(`Remove ${r.name||'this room'} from the schedule?`))return;
+    S.rooms=S.rooms.filter(x=>x!==r);render();
+  }
+});
+document.querySelectorAll('[data-j]').forEach(el=>el.addEventListener('input',()=>{S.job[el.dataset.j]=el.value;update()}));
+$('#allExisting').onclick=()=>{S.rooms.forEach(r=>r.lines.forEach(l=>{if(l.cDesc&&l.choice!=='custom')l.choice='existing'}));render()};
+$('#allProposed').onclick=()=>{S.rooms.forEach(r=>r.lines.forEach(l=>{if(l.pDesc&&l.choice!=='custom')l.choice='proposed'}));render()};
+$('#newBtn').onclick=()=>{
+  if(!confirm('Clear this schedule and start again?'))return;
+  S={job:blankJob(),rooms:[]};try{localStorage.removeItem(KEY)}catch(e){}
+  $('#main').classList.add('hide');$('#sumbar').classList.add('hide');$('#newBtn').classList.add('hide');$('#srcNote').textContent='';window.scrollTo(0,0);
+};
+const drop=$('#drop');
+drop.onclick=()=>$('#file').click();
+drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#file').click()}};
+$('#file').onchange=e=>{const f=e.target.files[0];e.target.value='';f&&loadPdf(f)};
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};
+drop.ondragleave=()=>drop.classList.remove('over');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');e.dataTransfer.files[0]&&loadPdf(e.dataTransfer.files[0])};
+
+/* ---------- Customer PDF ---------- */
+const lineInfo=(l,o)=>{
+  switch(l.choice){
+    case 'existing':return {tag:'KEEP EXISTING',col:'#c084fc',ink:'#150a2e',desc:l.cDesc,out:o+' W'};
+    case 'proposed':return {tag:'NEW RADIATOR',col:'#3ecf8e',ink:'#150a2e',desc:l.pDesc,out:o+' W'};
+    case 'custom':return {tag:'CUSTOMER SUPPLIED',col:'#ff7a45',ink:'#150a2e',desc:[l.model||'Customer radiator',l.dims?('('+l.dims+')'):''].join(' ').trim(),out:(l.out50?l.out50+' W @ DT50 · ':'')+o+' W'};
+    default:return {tag:'REMOVED',col:'#4a3f78',ink:'#ffffff',desc:l.cDesc||'',out:'-'};
+  }
+};
+function pdfRooms(){
+  const all=S.rooms.map(r=>({r,c:roomCalc(r)}));
+  if($('#pdfScope').value!=='changed')return all;
+  return all.filter(x=>x.r.lines.some(l=>l.choice==='custom'||(l.choice==='existing'&&l.pDesc)));
+}
+function buildPdf(){
+  const {jsPDF}=window.jspdf;const d=new jsPDF({unit:'mm',format:'a4'});
+  const BG='#130b2c',CARD='#1b1340',LINE='#322a5e',PINK='#e6007e',SUB='#b9b3d9',WHITE='#ffffff',PURPLE='#c084fc',GREEN='#3ecf8e',MUTE='#8f89b8';
+  const page=()=>{d.setFillColor(BG);d.rect(0,0,210,297,'F')};
+  const T=(s,x,y,sz,bold,col,al)=>{d.setFont('helvetica',bold?'bold':'normal');d.setFontSize(sz);d.setTextColor(col);d.text(String(s),x,y,{align:al||'left',baseline:'middle'})};
+  const fit=(s,w,sz,bold)=>{d.setFont('helvetica',bold?'bold':'normal');d.setFontSize(sz);const a=d.splitTextToSize(String(s||''),w);return a.length>1?a[0].replace(/\s*\S*$/,'')+'…':(a[0]||'')};
+  const fmt=v=>{const n=parseFloat(v);return isNaN(n)?String(v||''):String(n)};
+  const outd=fmt(S.job.outd),flow=fmt(S.job.flow),to=numv(S.job.outd);
+  page();
+  d.setFillColor(PINK);d.roundedRect(20,18.9,34,8.2,4.1,4.1,'F');T('Octopus Energy',37,23.1,9.5,true,WHITE,'center');
+  T('HEATING ASSESSMENT',20,34.8,9.5,true,SUB);
+  T('Your Radiator Schedule',20,42,22,true,WHITE);
+  d.setFont('helvetica','normal');d.setFontSize(10.5);
+  d.splitTextToSize("Here are the radiators planned for each room, and the room temperatures we estimate when it's cold outside.",170).forEach((l,i)=>T(l,20,49.8+i*4.4,10.5,false,SUB));
+  const cu='CUSTOMER: '+(S.job.cname||'-');T(cu,20,63.5,9.5,true,WHITE);
+  T('POSTCODE: '+(S.job.pc||'-'),20+d.getTextWidth(cu)+8,63.5,9.5,true,WHITE);
+  const sub=[S.job.addr,S.job.qref?('Quote ref '+S.job.qref):''].filter(Boolean).join('   ·   ');
+  if(sub)T(fit(sub,170,8.5),20,69.2,8.5,false,SUB);
+  d.setFillColor(PINK);d.rect(20,75.8,170,0.8,'F');
+  d.setFillColor(CARD);d.rect(20,84,170,22.3,'F');
+  d.setDrawColor('#3a2f6b');d.setLineWidth(0.3);d.rect(20,84,170,22.3,'S');d.line(105.1,84,105.1,106.3);
+  T('OUTSIDE DESIGN TEMPERATURE',27.8,90.8,8,false,SUB);T(outd+'°C',27.8,99,16,true,WHITE);
+  T('RADIATOR DESIGN FLOW TEMPERATURE',113.1,90.8,8,false,SUB);T(flow+'°C',113.1,99,16,true,WHITE);
+  T('Room by Room',20,118,13,true,WHITE);
+  let y=124;
+  const LH=7;
+  pdfRooms().forEach(({r,c})=>{
+    const n=Math.max(1,r.lines.length),H=13+n*LH+14;
+    if(y+H>284){d.addPage();page();y=20}
+    d.setFillColor(CARD);d.rect(20,y,170,H,'F');
+    d.setFillColor(covClass(c.cov)==='short'?PINK:GREEN);d.rect(20,y,1.2,H,'F');
+    T(fit(r.name||'Room',62,11,true),25,y+6.5,11,true,WHITE);
+    [['TARGET',isNaN(c.dt)?'-':c.dt.toFixed(1)+'°C',104],['COVERAGE',isNaN(c.cov)?'-':Math.round(c.cov*100)+'%',134],['ESTIMATED',isNaN(c.est)?'n/a':c.est.toFixed(1)+'°C',166]].forEach(([k,v,x])=>{
+      T(k,x,y+4,6.5,true,SUB,'center');T(v,x,y+8.8,k==='ESTIMATED'?12:10.5,true,WHITE,'center')});
+    d.setDrawColor(LINE);d.setLineWidth(0.25);d.line(24,y+13,186,y+13);
+    if(!r.lines.length)T('No radiators',25,y+13+LH/2+0.5,9,false,MUTE);
+    r.lines.forEach((l,i)=>{
+      const info=lineInfo(l,c.outs[i]),ly=y+13+i*LH+LH/2+0.3;
+      d.setFillColor(info.col);d.roundedRect(25,ly-2.3,31,4.6,1.2,1.2,'F');
+      T(info.tag,40.5,ly,6.2,true,info.ink,'center');
+      T(fit(info.desc,82,9),59,ly,9,false,WHITE);
+      T(info.out,185,ly,8.5,false,SUB,'right');
+    });
+    const ty=y+13+n*LH+5;
+    d.setDrawColor('#3a2f6b');d.setLineWidth(0.5);d.line(25,ty,185,ty);
+    const fr=isNaN(c.est)||isNaN(to)||!(c.dt>to)?0:Math.max(0,Math.min(1,(c.est-to)/(c.dt-to)));
+    d.setFillColor(GREEN);d.circle(179.5,ty,1.3,'F');
+    d.setFillColor(PURPLE);d.circle(26.5+fr*153,ty,1.3,'F');
+    T(outd+'°C outdoor',25,ty+4.6,7,false,MUTE);
+    T((isNaN(c.dt)?'-':c.dt.toFixed(1))+'°C design',185,ty+4.6,7,false,MUTE,'right');
+    y+=H+3;
+  });
+  if(y+22>290){d.addPage();page();y=20}
+  const ly=y+3;
+  d.setFillColor(GREEN);d.circle(22,ly,1.3,'F');T('Design temperature',25.7,ly,9.5,false,SUB);
+  d.setFillColor(PURPLE);d.circle(70,ly,1.3,'F');T('Estimated room temperature',73.7,ly,9.5,false,SUB);
+  d.setDrawColor(LINE);d.setLineWidth(0.25);d.line(20,y+9,190,y+9);
+  d.setFont('helvetica','normal');d.setFontSize(8);
+  d.splitTextToSize('These figures are estimates based on each room\'s heat loss and the planned radiator output at the coldest outdoor temperature your home is designed for. Where coverage is 100% or more, the room should reach its design temperature.',170)
+    .forEach((t,i)=>T(t,20,y+13.5+i*3.8,8,false,SUB));
+  return d;
+}
+const fname=()=>('Room-temperatures-'+(S.job.cname||S.job.pc||'customer')).replace(/[^\w-]+/g,'-')+'.pdf';
+const fail=t=>{$('#msg2').textContent=t};
+function canPdf(){
+  if(!window.jspdf){fail('PDF maker failed to load. Check your connection and reload.');return false}
+  if(!S.job.cname.trim()||!S.job.pc.trim()){fail('Please fill in the customer name and postcode in step 2 first.');$('#j-cname').scrollIntoView({behavior:'smooth',block:'center'});return false}
+  if(!S.rooms.length){fail('Add at least one room first.');return false}
+  fail('');return true;
+}
+
+/* ---------- Radiator schedule PDF (easy-read layout) ---------- */
+function buildSchedulePdf(){
+  const {jsPDF}=window.jspdf;const d=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const NAVY='#1c1a4f',INK='#1c1a4f',SUB='#5f5c86',RULE='#d9d7e8',BAND='#f5f4fb',PINK='#e6007e';
+  const OKBG='#d9f2e8',OKTX='#0f6b55',BADBG='#fde3de',BADTX='#b4321e';
+  const ACT={keep:['Keep existing','#efe4fd','#6b2bb8'],nochange:['No change','#ecebf3','#4a4775'],replace:['Replace','#d9f2e8','#0f6b55'],custom:['Customer supplied','#ffe7dc','#b8471b'],remove:['Remove','#ecebf3','#4a4775']};
+  const T=(s,x,y,sz,bold,col,al)=>{d.setFont('helvetica',bold?'bold':'normal');d.setFontSize(sz);d.setTextColor(col);d.text(String(s),x,y,{align:al||'left',baseline:'middle'})};
+  const fit=(s,w,sz,bold)=>{s=String(s==null?'':s);d.setFont('helvetica',bold?'bold':'normal');d.setFontSize(sz);
+    if(d.getTextWidth(s)<=w)return s;while(s.length>1&&d.getTextWidth(s+'…')>w)s=s.slice(0,-1);return s+'…'};
+  const shrink=(s,w,sz,min)=>{d.setFont('helvetica','normal');while(sz>min){d.setFontSize(sz);if(d.getTextWidth(String(s))<=w)break;sz-=0.2}return sz};
+  const pill=(txt,cx,cy,bg,tx,sz,minW)=>{d.setFont('helvetica','bold');d.setFontSize(sz);const w=Math.max(minW||0,d.getTextWidth(txt)+4);
+    d.setFillColor(bg);d.roundedRect(cx-w/2,cy-2.2,w,4.4,2.2,2.2,'F');T(txt,cx,cy+0.1,sz,true,tx,'center')};
+  const J=S.job,M=12,PW=297,PH=210;
+
+  /* ---- data ---- */
+  const all=S.rooms.map(r=>({r,c:roomCalc(r)}));
+  const totalOut=all.reduce((s,x)=>s+x.c.out,0),totalHL=all.reduce((s,x)=>s+(x.c.hl>0?x.c.hl:0),0);
+  const roomInfo=all.map(({r,c})=>{
+    const dtv=numv(r.dt),estv=isNaN(c.est)?NaN:(isNaN(dtv)?c.est:Math.min(c.est,dtv));
+    const lines=r.lines.map((l,i)=>{
+      let a,fin;
+      if(l.choice==='proposed'){a='replace';fin=l.pDesc}
+      else if(l.choice==='existing'){a=l.pDesc?'keep':'nochange';fin=l.cDesc}
+      else if(l.choice==='custom'){a='custom';fin=[l.model||'Customer radiator',l.dims].filter(Boolean).join(' ')+(l.out50?`  (${l.out50} W @ DT50)`:'')}
+      else {a='remove';fin='No radiator'}
+      return {cur:l.cDesc||'-',curOut:l.cDesc?l.cOut:'-',a,fin,out:c.outs[i]};
+    });
+    if(!lines.length)lines.push({cur:'-',curOut:'-',a:null,fin:'No radiators',out:0});
+    return {name:r.name||'Room',dt:isNaN(dtv)?'-':dtv.toFixed(dtv%1?1:0),hl:c.hl>0?c.hl:'-',wpm:numv(r.wpm2)>0?numv(r.wpm2).toFixed(1):'-',
+      total:c.out,cov:isNaN(c.cov)?null:Math.round(c.cov*100),covOk:covClass(c.cov)==='ok',
+      est:isNaN(estv)?'n/a':estv.toFixed(1)+'°C',estOk:!isNaN(estv)&&!isNaN(dtv)&&estv>=dtv-0.05,lines};
+  });
+  const meeting=roomInfo.filter(x=>x.estOk).length;
+
+  /* ---- page header ---- */
+  const brand=()=>{
+    d.setFont('helvetica','bold');d.setFontSize(14);const w1=d.getTextWidth('octopus');d.setFont('helvetica','normal');const w2=d.getTextWidth('energy');
+    const bx=PW-M-(w1+w2);T('octopus',bx,13,14,true,NAVY);T('energy',bx+w1,13,14,false,NAVY);
+    d.setFillColor(NAVY);d.roundedRect(PW-M-(w1+w2),16.2,w1+w2,3.6,1.8,1.8,'F');T('services',PW-M-(w1+w2)/2,18.05,6.5,false,'#ffffff','center');
+  };
+  brand();
+  T('Radiator Schedule',M,13,18,true,NAVY);
+  d.setFillColor(PINK);d.rect(M,18,22,0.9,'F');
+  // details grid
+  const now=new Date(),date=now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const addr=[J.addr,J.pc].filter(Boolean).join(', ');
+  const det=[['Client',J.cname||'-'],['Address',addr||'-'],['Project ref',J.pref||'-'],['Quote ref',J.qref||'-'],['Date',date]];
+  const DX=[M,M+52,M+150,M+190,M+230],DWd=[48,94,36,36,36];
+  det.forEach(([l,v],i)=>{T(l.toUpperCase(),DX[i],25,6,true,SUB);T(fit(v,DWd[i],8.5,true),DX[i],29.5,8.5,true,INK)});
+  // summary cards
+  const cards=[['Design flow temperature',(isNaN(numv(J.flow))?'-':numv(J.flow))+'°C'],['Design outside temperature',(isNaN(numv(J.outd))?'-':numv(J.outd))+'°C'],
+    ['Total radiator output',totalOut+' W'],['Rooms reaching design temp',meeting+' of '+roomInfo.length]];
+  const CW=(PW-2*M-3*3)/4;
+  cards.forEach(([l,v],i)=>{const x=M+i*(CW+3);d.setFillColor(BAND);d.roundedRect(x,35,CW,13,1.5,1.5,'F');
+    if(i===3){d.setFillColor(meeting===roomInfo.length?OKTX:PINK);d.rect(x,35,1.2,13,'F')}
+    T(l.toUpperCase(),x+4,39,6,true,SUB);T(v,x+4,44.2,11,true,INK)});
+
+  /* ---- table ---- */
+  // columns: room, design, heat loss, w/m2, current, cur out, action, final radiator, final out, room total, coverage, est
+  const W=[36,15,17,14,52,15,27,56,15,17,17,16];
+  const scale=(PW-2*M)/W.reduce((a,b)=>a+b,0);for(let i=0;i<W.length;i++)W[i]*=scale;
+  const XS=[M];W.forEach(w=>XS.push(XS[XS.length-1]+w));
+  const cx=i=>XS[i]+W[i]/2, lx=i=>XS[i]+2.2, RH=6.4, HH=11;
+  const heads=[['Room',''],['Design','temp'],['Heat loss','(W)'],['Heat loss','(W/m²)'],['Current radiator',''],['Output','(W)'],['Action',''],['Final radiator',''],['Output','(W)'],['Room total','(W)'],['Coverage',''],['Est. room','temp']];
+  const leftCols=[0,4,7];
+  const header=top=>{
+    d.setFillColor(NAVY);d.roundedRect(M,top,PW-2*M,HH,1.5,1.5,'F');d.rect(M,top+HH-2,PW-2*M,2,'F');
+    // group tints
+    d.setFillColor('#2b2866');d.rect(XS[4],top,XS[6]-XS[4],HH,'F');
+    d.setFillColor('#2b2866');d.rect(XS[9],top,XS[12]-XS[9],HH,'F');
+    heads.forEach(([a,b],i)=>{const left=leftCols.includes(i),x=left?lx(i):cx(i),al=left?'left':'center';
+      if(b){T(a,x,top+4,6.6,true,'#ffffff',al);T(b,x,top+7.6,6.2,false,'#cfcce8',al)}else T(a,x,top+HH/2,6.6,true,'#ffffff',al)});
+    return top+HH;
+  };
+  let y=header(54),page=1;const bottom=PH-16;
+  roomInfo.forEach((ri,idx)=>{
+    const n=ri.lines.length,H=n*RH;
+    if(y+H>bottom){d.addPage('a4','landscape');page++;brand();T('Radiator Schedule (continued)',M,13,12,true,NAVY);y=header(24)}
+    if(idx%2===0){d.setFillColor(BAND);d.rect(M,y,PW-2*M,H,'F')}
+    const mid=y+H/2;
+    // room-level cells (shown once, centred across the room's radiators)
+    T(fit(ri.name,W[0]-3,7.6,true),lx(0),mid,7.6,true,INK);
+    T(ri.dt+(ri.dt==='-'?'':'°C'),cx(1),mid,7.2,false,INK,'center');
+    T(ri.hl,cx(2),mid,7.2,false,INK,'center');
+    T(ri.wpm,cx(3),mid,7.2,false,SUB,'center');
+    T(ri.total,cx(9),mid,7.6,true,INK,'center');
+    if(ri.cov!=null)pill(ri.cov+'%',cx(10),mid,ri.covOk?OKBG:BADBG,ri.covOk?OKTX:BADTX,7,13);else T('-',cx(10),mid,7.2,false,SUB,'center');
+    pill(ri.est,cx(11),mid,ri.estOk?OKBG:BADBG,ri.estOk?OKTX:BADTX,7,14);
+    // radiator lines
+    ri.lines.forEach((ln,i)=>{
+      const ly=y+i*RH+RH/2;
+      if(i>0){d.setDrawColor(RULE);d.setLineWidth(0.2);d.line(XS[4]+1,y+i*RH,XS[9]-1,y+i*RH)}
+      let sz=shrink(ln.cur,W[4]-4,7.2,5.4);T(fit(ln.cur,W[4]-4,sz),lx(4),ly,sz,false,ln.a==='replace'||ln.a==='remove'?SUB:INK);
+      T(ln.curOut,cx(5),ly,7.2,false,SUB,'center');
+      if(ln.a){const [lab,bg,tx]=ACT[ln.a];pill(lab,cx(6),ly,bg,tx,6.4,W[6]-3)}
+      sz=shrink(ln.fin,W[7]-4,7.2,5.4);T(fit(ln.fin,W[7]-4,sz,ln.a!=='remove'),lx(7),ly,sz,ln.a!=='remove'&&ln.a!==null,ln.a==='remove'?SUB:INK);
+      T(ln.out,cx(8),ly,7.2,true,INK,'center');
+    });
+    y+=H;
+    d.setDrawColor('#bdb9d6');d.setLineWidth(0.3);d.line(M,y,PW-M,y);
+  });
+
+  /* ---- footer on every page ---- */
+  const pages=d.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    d.setPage(p);
+    const fy=PH-9;let x=M;
+    Object.keys(ACT).forEach(k=>{const [lab,bg,tx]=ACT[k];d.setFont('helvetica','bold');d.setFontSize(6);const w=d.getTextWidth(lab)+4;pill(lab,x+w/2,fy,bg,tx,6,0);x+=w+2.5});
+    T('Outputs are at design conditions. Est. room temp shows the design temperature when coverage is 97% or more.',x+2,fy,6.2,false,SUB);
+    T('Page '+p+' of '+pages,PW-M,fy,6.2,false,SUB,'right');
+  }
+  return d;
+}
+const schedName=()=>('Radiator-Schedule-'+(S.job.cname||S.job.pc||'customer')).replace(/[^\w-]+/g,'-')+'.pdf';
+$('#pdfBtn').onclick=()=>{if(canPdf())buildSchedulePdf().save(schedName())};
+$('#shareBtn').onclick=async()=>{
+  if(!canPdf())return;
+  try{
+    const file=new File([buildSchedulePdf().output('blob')],schedName(),{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file],title:'Radiator schedule'});
+    else{buildSchedulePdf().save(schedName());fail('Sharing isn’t supported on this device, so the PDF has been downloaded instead.')}
+  }catch(e){}
+};
+$('#tempPdfBtn').onclick=()=>{
+  if(!canPdf())return;
+  if(!pdfRooms().length){fail('No rooms match "Rooms to include". Choose All rooms, or keep an existing radiator or add a customer-supplied one.');return}
+  buildPdf().save(fname());
+};
+
+/* ---------- CSV ---------- */
+$('#csvBtn').onclick=()=>{
+  const q=v=>{v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const J=S.job,L=[['Customer',J.cname],['Address',J.addr],['Postcode',J.pc],['Project reference',J.pref],['Quote reference',J.qref],['Flow temperature (C)',J.flow],['Outdoor design temperature (C)',J.outd],['Flow/return difference (K)',dk()],['Mean water temperature (C)',mwt()],[],
+    ['Room','Heat loss (W)','Heat loss (W/m2)','Design temp (C)','Needs @DT50 (W)','Needs @DT50 (BTU)','Position','Choice','Radiator','Dimensions','Output @DT50 (W)','Output at design (W)','Room output (W)','Coverage %','Est. room temp (C)']];
+  const lab={existing:'Keep existing',proposed:'Proposed',custom:'Customer supplied',none:'No radiator'};
+  S.rooms.forEach(r=>{const c=roomCalc(r);
+    const base=[r.name,r.hl,r.wpm2,r.dt,isNaN(c.req)?'':c.req,isNaN(c.req)?'':Math.round(c.req*3.41)];
+    const tail=[c.out,isNaN(c.cov)?'':Math.round(c.cov*100),isNaN(c.est)?'':c.est.toFixed(1)];
+    if(!r.lines.length)L.push(base.concat(['','','','','','',...tail]));
+    r.lines.forEach((l,i)=>{
+      const desc=l.choice==='existing'?l.cDesc:l.choice==='proposed'?l.pDesc:l.choice==='custom'?l.model:(l.cDesc||'');
+      L.push(base.concat([i+1,lab[l.choice],desc,l.choice==='custom'?l.dims:'',l.choice==='custom'?l.out50:'',c.outs[i],...tail]));
+    });
+  });
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'}));
+  a.download=fname().replace(/\.pdf$/,'.csv');a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+
+/* ---------- Init ---------- */
+if(restore())showMain();
+})();
+</script>
+</body>
+</html>
