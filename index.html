@@ -96,6 +96,9 @@
   .opt.none[aria-pressed=true]{border-color:var(--ink-soft);background:var(--panel)}
   .customf{display:grid;grid-template-columns:2fr 1.2fr 1fr;gap:8px;margin-top:8px}
   @media (max-width:700px){.customf{grid-template-columns:1fr}}
+  .customf.ratedf{grid-template-columns:200px 1fr;align-items:center}
+  .ratedf .chint{grid-column:auto}
+  @media (max-width:700px){.customf.ratedf{grid-template-columns:1fr}}
   .customf input{padding:7px 9px;font-size:13px}
   .chint{grid-column:1/-1;font-size:12px;color:var(--ink-soft)}
   .chint b{color:var(--heat)}
@@ -204,18 +207,7 @@
       <p class="hint" style="margin:0 0 12px">The radiator schedule PDF follows the Octopus schedule layout, with every room and the radiators chosen above.</p>
       <div class="actions">
         <button class="btn primary" id="pdfBtn" type="button">⬇ Download radiator schedule PDF</button>
-        <button class="btn" id="shareBtn" type="button">Share schedule PDF</button>
         <button class="btn" id="csvBtn" type="button">⬇ Download CSV</button>
-      </div>
-      <div class="grid" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
-        <div>
-          <label class="f" for="pdfScope">Room temperature PDF: rooms to include</label>
-          <select id="pdfScope">
-            <option value="all">All rooms</option>
-            <option value="changed">Only rooms with a kept or customer-supplied radiator</option>
-          </select>
-        </div>
-        <div><button class="btn" id="tempPdfBtn" type="button">⬇ Download room temperature PDF</button></div>
       </div>
       <div class="msg" id="msg2"></div>
     </section>
@@ -258,7 +250,7 @@ const newRoom=(o)=>Object.assign({id:uid('r'),name:'',hl:'',dt:21,lines:[newLine
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function restore(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.job&&Array.isArray(s.rooms)&&s.rooms.length){
     if(s.job.schedFlow!==undefined&&s.job.schedFlow!=='')s.job.flow=s.job.schedFlow;
-    s.rooms.forEach(r=>{if(r.wpm2==null){const a=parseFloat(r.area),h=parseFloat(r.hl);r.wpm2=(a>0&&h>0)?+(h/a).toFixed(1):''}delete r.area});
+    s.rooms.forEach(r=>{(r.lines||[]).forEach(l=>{if(l.choice==='none')l.choice=l.pDesc?'proposed':'existing'});if(r.wpm2==null){const a=parseFloat(r.area),h=parseFloat(r.hl);r.wpm2=(a>0&&h>0)?+(h/a).toFixed(1):''}delete r.area});
     S=s;return true}}catch(e){}return false}
 
 /* ---------- Maths ---------- */
@@ -266,9 +258,12 @@ const numv=v=>{const n=parseFloat(v);return isNaN(n)?NaN:n};
 function dk(){const f=numv(S.job.flow);return isNaN(f)?NaN:(f>50?10:5)}
 function mwt(){return numv(S.job.flow)-dk()/2}
 function factor(dt){const d=mwt()-numv(dt);return d>0?Math.pow(d/50,N):NaN}
+/* Designer / column existing radiators can be given their ΔT50 rating, which then replaces the schedule figure */
+const isRated=l=>/designer|column/i.test(l.cDesc||'');
+function existingOut(l,room){const o=numv(l.cOut50),f=factor(room.dt);return (isRated(l)&&o>0&&f>0)?Math.round(o*f):(l.cOut||0)}
 function lineOut(l,room){
   switch(l.choice){
-    case 'existing':return l.cOut||0;
+    case 'existing':return existingOut(l,room);
     case 'proposed':return l.pOut||0;
     case 'custom':{const f=factor(room.dt),o=numv(l.out50);return (o>0&&f>0)?Math.round(o*f):0}
     default:return 0;
@@ -302,8 +297,13 @@ function lineHTML(r,l,i){
   if(l.cDesc)h+=optHTML(l,'existing','Keep existing',l.cDesc+' · '+l.cOut+' W');
   if(l.pDesc)h+=optHTML(l,'proposed','Proposed',l.pDesc+' · '+l.pOut+' W');
   h+=optHTML(l,'custom','Customer supplied','');
-  if(l.cDesc)h+=optHTML(l,'none','No radiator','Remove, nothing fitted');
   h+='</div>';
+  if(isRated(l)&&l.choice==='existing'){
+    h+=`<div class="customf ratedf">
+      <label class="f" style="grid-column:1/-1;margin:0;font-size:12px">Designer / column radiator: enter its output @ΔT50 from the manufacturer (optional)</label>
+      <input data-c="cOut50" type="number" min="0" value="${esc(l.cOut50)}" placeholder="Output @ΔT50 (W)" aria-label="Existing radiator output at Delta T 50 in watts">
+      <div class="chint" id="eh-${l.id}"></div></div>`;
+  }
   if(l.choice==='custom'){
     h+=`<div class="customf">
       <input data-c="model" value="${esc(l.model)}" placeholder="Model + make" aria-label="Model and make">
@@ -363,6 +363,8 @@ function update(){
         if(ch)ch.innerHTML=isNaN(need)?'Enter the room heat loss and design temperature to see what this radiator needs.':
           (need===0?'The room is already covered without this radiator.':`To bring the room to 100%, this radiator needs about <b>${need} W @ΔT50</b> (${Math.round(need*3.41)} BTU).`);
       }
+      const eh=$('#eh-'+l.id);
+      if(eh){const v=numv(l.cOut50);eh.innerHTML=(v>0&&o!==l.cOut)?`= <b>${o} W</b> at design, used instead of the schedule's ${l.cOut} W.`:`Leave blank to use the schedule's ${l.cOut} W.`}
       if(l.choice==='existing'&&l.pDesc)kept++;
       if(l.choice==='custom')cust++;
       if(l.choice==='proposed')nw++;
@@ -487,8 +489,7 @@ const lineInfo=(l,o)=>{
 };
 function pdfRooms(){
   const all=S.rooms.map(r=>({r,c:roomCalc(r)}));
-  if($('#pdfScope').value!=='changed')return all;
-  return all.filter(x=>x.r.lines.some(l=>l.choice==='custom'||(l.choice==='existing'&&l.pDesc)));
+  return all;
 }
 function buildPdf(){
   const {jsPDF}=window.jspdf;const d=new jsPDF({unit:'mm',format:'a4'});
@@ -586,7 +587,9 @@ function buildSchedulePdf(){
       else if(l.choice==='existing'){a=l.pDesc?'keep':'nochange';fin=l.cDesc}
       else if(l.choice==='custom'){a='custom';fin=[l.model||'Customer radiator',l.dims].filter(Boolean).join(' ')+(l.out50?`  (${l.out50} W @ DT50)`:'')}
       else {a='remove';fin='No radiator'}
-      return {cur:l.cDesc||'-',curOut:l.cDesc?l.cOut:'-',a,fin,out:c.outs[i]};
+      const rated=isRated(l)&&numv(l.cOut50)>0,eo=existingOut(l,r);
+      if(rated&&l.choice==='existing')fin=l.cDesc+`  (${l.cOut50} W @ DT50)`;
+      return {cur:(l.cDesc||'-')+(rated?`  (${l.cOut50} W @ DT50)`:''),curOut:l.cDesc?eo:'-',a,fin,out:c.outs[i]};
     });
     if(!lines.length)lines.push({cur:'-',curOut:'-',a:null,fin:'No radiators',out:0});
     return {name:r.name||'Room',dt:isNaN(dtv)?'-':dtv.toFixed(dtv%1?1:0),hl:c.hl>0?c.hl:'-',wpm:numv(r.wpm2)>0?numv(r.wpm2).toFixed(1):'-',
@@ -668,7 +671,7 @@ function buildSchedulePdf(){
   for(let p=1;p<=pages;p++){
     d.setPage(p);
     const fy=PH-9;let x=M;
-    Object.keys(ACT).forEach(k=>{const [lab,bg,tx]=ACT[k];d.setFont('helvetica','bold');d.setFontSize(6);const w=d.getTextWidth(lab)+4;pill(lab,x+w/2,fy,bg,tx,6,0);x+=w+2.5});
+    Object.keys(ACT).filter(k=>k!=='remove').forEach(k=>{const [lab,bg,tx]=ACT[k];d.setFont('helvetica','bold');d.setFontSize(6);const w=d.getTextWidth(lab)+4;pill(lab,x+w/2,fy,bg,tx,6,0);x+=w+2.5});
     T('Outputs are at design conditions. Est. room temp shows the design temperature when coverage is 97% or more.',x+2,fy,6.2,false,SUB);
     T('Page '+p+' of '+pages,PW-M,fy,6.2,false,SUB,'right');
   }
@@ -676,19 +679,6 @@ function buildSchedulePdf(){
 }
 const schedName=()=>('Radiator-Schedule-'+(S.job.cname||S.job.pc||'customer')).replace(/[^\w-]+/g,'-')+'.pdf';
 $('#pdfBtn').onclick=()=>{if(canPdf())buildSchedulePdf().save(schedName())};
-$('#shareBtn').onclick=async()=>{
-  if(!canPdf())return;
-  try{
-    const file=new File([buildSchedulePdf().output('blob')],schedName(),{type:'application/pdf'});
-    if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file],title:'Radiator schedule'});
-    else{buildSchedulePdf().save(schedName());fail('Sharing isn’t supported on this device, so the PDF has been downloaded instead.')}
-  }catch(e){}
-};
-$('#tempPdfBtn').onclick=()=>{
-  if(!canPdf())return;
-  if(!pdfRooms().length){fail('No rooms match "Rooms to include". Choose All rooms, or keep an existing radiator or add a customer-supplied one.');return}
-  buildPdf().save(fname());
-};
 
 /* ---------- CSV ---------- */
 $('#csvBtn').onclick=()=>{
@@ -702,7 +692,7 @@ $('#csvBtn').onclick=()=>{
     if(!r.lines.length)L.push(base.concat(['','','','','','',...tail]));
     r.lines.forEach((l,i)=>{
       const desc=l.choice==='existing'?l.cDesc:l.choice==='proposed'?l.pDesc:l.choice==='custom'?l.model:(l.cDesc||'');
-      L.push(base.concat([i+1,lab[l.choice],desc,l.choice==='custom'?l.dims:'',l.choice==='custom'?l.out50:'',c.outs[i],...tail]));
+      L.push(base.concat([i+1,lab[l.choice],desc,l.choice==='custom'?l.dims:'',l.choice==='custom'?l.out50:(l.choice==='existing'&&isRated(l)?(l.cOut50||''):''),c.outs[i],...tail]));
     });
   });
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'}));
